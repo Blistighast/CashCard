@@ -11,12 +11,18 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.net.URI;
+
 
 @SpringBootTest(webEnvironment =
 		SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CashCardApplicationTests {
 	@Autowired
 	TestRestTemplate restTemplate;
+
+	@Test
+	void contextLoads() {
+	}
 
 	@Test
 	void shouldReturnACashCardWhenDataIsSaved() {
@@ -41,7 +47,26 @@ class CashCardApplicationTests {
 	}
 
 	@Test
-	void contextLoads() {
+	void shouldCreateANewCashCard() {
+		CashCard newCashCard = new CashCard(null, 250.00);
+		ResponseEntity<Void> createResponse =
+				restTemplate.postForEntity("/cashcards", newCashCard, Void.class);
+
+		assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+		URI locationOfNewCard =
+				createResponse.getHeaders().getLocation();
+		ResponseEntity<String> getReponse =
+				restTemplate.getForEntity(locationOfNewCard, String.class);
+		assertThat(getReponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		DocumentContext documentContext =
+				JsonPath.parse(getReponse.getBody());
+		Number id = documentContext.read("$.id");
+		Double amount = documentContext.read("$.amount");
+
+		assertThat(id).isNotNull();
+		assertThat(amount).isEqualTo(250.00);
 	}
 
 }
