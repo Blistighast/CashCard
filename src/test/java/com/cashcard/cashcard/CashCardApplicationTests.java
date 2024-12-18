@@ -142,29 +142,67 @@ class CashCardApplicationTests {
 	}
 
 	@Test
-	//dirtiescontext makes each test start with clean slate, not taking into account what other tests do
-	//should try to be used as specific as possible, like for this specific test and not whole test class
+	void shouldRejectUsersWhoAreNotCardOwners() {
+		ResponseEntity<String> response = restTemplate
+				.withBasicAuth("hank-owns-no-cards", "qrs456")
+				.getForEntity("/cashcards/99", String.class);
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+	}
+
+	@Test
+	void shouldNotAllowAccessToCashCardsTheyDoNotOwn() {
+		ResponseEntity<String> response = restTemplate
+				.withBasicAuth("sarah1", "abc123")
+				.getForEntity("/cashcards/102", String.class); //kumars data
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+
+	@Test
 	@DirtiesContext
 	void shouldCreateANewCashCard() {
-		CashCard newCashCard = new CashCard(null, 250.00, "sarah1");
-		ResponseEntity<Void> createResponse =
-				restTemplate.postForEntity("/cashcards", newCashCard, Void.class);
-
+		CashCard newCashCard = new CashCard(null, 250.00, null);
+		ResponseEntity<Void> createResponse = restTemplate.postForEntity("/cashcards", newCashCard, Void.class);
 		assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-		URI locationOfNewCard =
-				createResponse.getHeaders().getLocation();
-		ResponseEntity<String> getReponse =
-				restTemplate.getForEntity(locationOfNewCard, String.class);
-		assertThat(getReponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+		URI locationOfNewCashCard = createResponse.getHeaders().getLocation();
+		ResponseEntity<String> getResponse = restTemplate.getForEntity(locationOfNewCashCard, String.class);
+		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-		DocumentContext documentContext =
-				JsonPath.parse(getReponse.getBody());
+		DocumentContext documentContext = JsonPath.parse(getResponse.getBody());
 		Number id = documentContext.read("$.id");
 		Double amount = documentContext.read("$.amount");
 
 		assertThat(id).isNotNull();
 		assertThat(amount).isEqualTo(250.00);
 	}
+
+//	@Test
+//	//dirtiescontext makes each test start with clean slate, not taking into account what other tests do
+//	//should try to be used as specific as possible, like for this specific test and not whole test class
+//	@DirtiesContext
+//	void shouldCreateANewCashCard() {
+//		CashCard newCashCard = new CashCard(null, 250.00, null);
+//		ResponseEntity<Void> createResponse =
+//				restTemplate.postForEntity("/cashcards", newCashCard, Void.class);
+//
+//		assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+//
+//		URI locationOfNewCard =
+//				createResponse.getHeaders().getLocation();
+//		ResponseEntity<String> getReponse =
+//				restTemplate.getForEntity(locationOfNewCard, String.class);
+//		assertThat(getReponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+//
+//		DocumentContext documentContext =
+//				JsonPath.parse(getReponse.getBody());
+//		Number id = documentContext.read("$.id");
+//		Double amount = documentContext.read("$.amount");
+//
+//		assertThat(id).isNotNull();
+//		assertThat(amount).isEqualTo(250.00);
+//	}
 
 }
