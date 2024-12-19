@@ -25,10 +25,12 @@ class SecurityConfig {
         http
                 .authorizeHttpRequests(request -> request
                         .requestMatchers("/cashcards/**")
+
                         .hasRole("CARD-OWNER"))
-//                      .authenticated() //replaced by hasRole for RBAC, Role based auth
+//                      .authenticated()) //replaced by hasRole for RBAC, Role based auth
                 .httpBasic(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable());
+
         return http.build();
     }
 
