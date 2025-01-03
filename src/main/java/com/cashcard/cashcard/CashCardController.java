@@ -38,13 +38,24 @@ public class CashCardController {
     @GetMapping("/{requestedId}")
     private ResponseEntity<CashCard> findById(@PathVariable Long requestedId, Principal principal) {
         Optional<CashCard> cashCardOptional =
-                Optional.ofNullable(cashCardRepository.findByIdAndOwner(requestedId, principal.getName()));
+                Optional.ofNullable(findCashCard(requestedId, principal));
         if (cashCardOptional.isPresent()) {
             return ResponseEntity.ok(cashCardOptional.get());
         } else {
             return ResponseEntity.notFound().build();
         }
     }
+
+    // alternative without Optional
+//    @GetMapping("/{requestedId}")
+//    private ResponseEntity<CashCard> findById(@PathVariable Long requestedId, Principal principal) {
+//        CashCard cashCard = findCashCard(requestedId, principal);
+//        if (cashCard != null) {
+//            return ResponseEntity.ok(cashCard);
+//        } else {
+//            return ResponseEntity.notFound().build();
+//        }
+//    }
 
     @PostMapping
     private ResponseEntity<Void> createCashCard(@RequestBody CashCard newCashCardRequest, UriComponentsBuilder ucb, Principal principal) {
@@ -58,7 +69,17 @@ public class CashCardController {
     }
 
     @PutMapping("/{requestedId}")
-    private ResponseEntity<Void> updateCashCard(@PathVariable Long requestedId, @RequestBody CashCard cashCardUpdate) {
-        return ResponseEntity.noContent().build();
+    private ResponseEntity<Void> updateCashCard(@PathVariable Long requestedId, @RequestBody CashCard cashCardUpdate, Principal principal) {
+        CashCard cashCard = findCashCard(requestedId, principal);
+        if (cashCard != null) {
+            CashCard updatedCashCard = new CashCard(cashCard.id(), cashCardUpdate.amount(), principal.getName());
+            cashCardRepository.save(updatedCashCard);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    private CashCard findCashCard(Long requestedId, Principal principal) {
+        return cashCardRepository.findByIdAndOwner(requestedId, principal.getName());
     }
 }
