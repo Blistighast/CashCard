@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
@@ -183,30 +185,26 @@ class CashCardApplicationTests {
 		assertThat(amount).isEqualTo(250.00);
 	}
 
-//	@Test
-//	//dirtiescontext makes each test start with clean slate, not taking into account what other tests do
-//	//should try to be used as specific as possible, like for this specific test and not whole test class
-//	@DirtiesContext
-//	void shouldCreateANewCashCard() {
-//		CashCard newCashCard = new CashCard(null, 250.00, null);
-//		ResponseEntity<Void> createResponse =
-//				restTemplate.postForEntity("/cashcards", newCashCard, Void.class);
-//
-//		assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-//
-//		URI locationOfNewCard =
-//				createResponse.getHeaders().getLocation();
-//		ResponseEntity<String> getReponse =
-//				restTemplate.getForEntity(locationOfNewCard, String.class);
-//		assertThat(getReponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-//
-//		DocumentContext documentContext =
-//				JsonPath.parse(getReponse.getBody());
-//		Number id = documentContext.read("$.id");
-//		Double amount = documentContext.read("$.amount");
-//
-//		assertThat(id).isNotNull();
-//		assertThat(amount).isEqualTo(250.00);
-//	}
+    @Test
+	@DirtiesContext
+	void shouldUpdateAnExistingCashCard() {
+		CashCard cashCardUpdate = new CashCard(null, 19.99, null);
+		HttpEntity<CashCard> request = new HttpEntity<>(cashCardUpdate);
+		ResponseEntity<Void> response = restTemplate
+				.withBasicAuth("sarah1", "abc123")
+				.exchange("/cashcards/99", HttpMethod.PUT, request, Void.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+		ResponseEntity<String> getResponse = restTemplate
+				.withBasicAuth("sarah1", "abc123")
+				.getForEntity("/cashcards/99", String.class);
+		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+		DocumentContext documentContext = JsonPath.parse(getResponse.getBody());
+		Number id = documentContext.read("$.id");
+		Double amount = documentContext.read("$.amount");
+		assertThat(id).isEqualTo(99);
+		assertThat(amount).isEqualTo(19.99);
+	}
 
 }
